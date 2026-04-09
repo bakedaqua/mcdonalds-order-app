@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麥當勞點餐系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>麥當勞點餐系統</h1>
+        <button id="adminLoginBtn" class="admin-btn">管理員</button>
+    </header>
+
+    <!-- 登入視窗 -->
+    <div id="loginOverlay" class="modal-overlay active">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>歡迎使用點餐系統</h2>
+            </div>
+            <div class="modal-body">
+                <p>請輸入您的學號與姓名以開始點餐</p>
+                <div class="form-group">
+                    <input type="text" id="loginNameInput" placeholder="例如: B1234567王小明">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="add-to-cart-btn" id="loginBtn">登入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 分類導覽 -->
+        <nav class="categories">
+            <button class="category-btn active" data-category="meals">漢堡與沙拉</button>
+            <button class="category-btn" data-category="fried">鷄塊與麥脆鷄腿</button>
+            <button class="category-btn" data-category="drinks">McCafé與各式飲品</button>
+        </nav>
+
+        <!-- 餐點列表 -->
+        <main class="product-grid" id="productGrid">
+            <!-- 動態生成餐點卡片 -->
+        </main>
+    </div>
+
+    <!-- 購物車按鈕 -->
+    <button class="cart-toggle" id="cartToggle">
+        <span class="cart-icon">🛒</span>
+        <span class="cart-count" id="cartCount">0</span>
+    </button>
+
+    <!-- 購物車側邊欄 -->
+    <aside class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h2 id="sidebarTitle">我的訂單摘要</h2>
+            <button class="close-cart" id="closeCart">×</button>
+        </div>
+        <div class="cart-body" id="cartBody">
+            <!-- 依姓名分群顯示的購物車內容 -->
+        </div>
+        <div class="cart-footer">
+            <h3 class="total-price">總計: $<span id="totalPrice">0</span></h3>
+            <button class="clear-all-btn" id="clearAllBtn">清空全部</button>
+        </div>
+    </aside>
+
+    <!-- 客製化與輸入姓名 Modal -->
+    <div class="modal-overlay" id="orderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalItemName">餐點名稱</h2>
+                <button class="close-modal" id="closeModal">×</button>
+            </div>
+            <div class="modal-body" id="modalBodyDynamic">
+                <p class="modal-price" id="modalItemPrice">$0</p>
+
+                <!-- 動態注入的套餐/客製化選擇區 -->
+                <div id="dynamicOptionsArea"></div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="add-to-cart-btn" id="confirmAddBtn">加入購物車</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Supabase SDK 與 主程式 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+</body>
+</html>
