@@ -1,7 +1,7 @@
 // 初始化 Supabase
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // 請替換成你的 Supabase Project URL
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 請替換成你的 Supabase Anon Key
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://rcpvbozkheafjbpsuanc.supabase.co'; // 請替換成你的 Supabase Project URL
+const SUPABASE_ANON_KEY = 'sb_publishable_oTEpvc1UB2DH1du9HdpcPQ_j-JwMimI'; // 請替換成你的 Supabase Anon Key
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 產品資料庫 (模擬麥當勞最新價格與邏輯)
 const productsData = {
@@ -115,7 +115,7 @@ loginBtn.addEventListener('click', () => {
     const name = loginNameInput.value.trim();
     if (!name) return alert('請填寫學號與姓名哦！');
     if (!/^[bB]\d{7}/.test(name)) return alert('學號格式錯誤！請輸入 B 開頭加上 7 碼數字與姓名，例如：B1234567王小明');
-    
+
     currentUser = name;
     localStorage.setItem('currentUser', name);
     loginOverlay.classList.remove('active');
@@ -178,7 +178,7 @@ function openModal(product) {
     currentCalculatedPrice = product.price;
     modalItemName.textContent = product.name;
     modalItemPrice.textContent = `$${currentCalculatedPrice}`;
-    
+
     // 動態清空配置區
     dynamicOptionsArea.innerHTML = '';
 
@@ -218,11 +218,11 @@ function openModal(product) {
         const updatePrice = () => {
             const selectedVal = document.querySelector('input[name="comboSet"]:checked').value;
             const cb = combos.find(x => x.id === selectedVal);
-            
+
             // 是否顯示飲料選單
             if (cb.showDrinks) addonArea.classList.remove('hidden');
             else addonArea.classList.add('hidden');
-            
+
             let drinkExtra = 0;
             if (cb.showDrinks) {
                 const selectedDrink = document.querySelector('input[name="drinkSelection"]:checked');
@@ -278,8 +278,8 @@ confirmAddBtn.addEventListener('click', () => {
         const custom = document.getElementById('customization').value;
         if (custom) finalDetails = `[${custom}]`;
     }
-    
-    supabase.from('orders').insert([{
+
+    supabaseClient.from('orders').insert([{
         username: currentUser,
         item_name: currentProduct.name,
         item_price: currentCalculatedPrice,
@@ -306,7 +306,7 @@ function renderCart(cartData) {
             const groupDiv = document.createElement('div');
             groupDiv.className = 'user-group';
             let itemsHtml = '';
-            
+
             items.forEach((item) => {
                 userTotal += item.price;
                 totalItems++;
@@ -320,7 +320,7 @@ function renderCart(cartData) {
                     </div>
                 `;
             });
-            
+
             groupDiv.innerHTML = `
                 <h4>
                     ${username} <span style="font-size:14px;color:#333">小計: $${userTotal}</span>
@@ -340,13 +340,13 @@ function renderCart(cartData) {
 // Supabase 即時同步與 CRUD 邏輯
 async function fetchOrders() {
     if (!currentUser && !isAdmin) return;
-    
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: true });
+
+    const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: true });
     if (error) {
         console.error('Error fetching orders:', error);
         return;
     }
-    
+
     const cartData = {};
     if (data) {
         data.forEach(row => {
@@ -366,7 +366,7 @@ async function fetchOrders() {
 }
 
 // 監聽即時變更
-supabase.channel('public:orders')
+supabaseClient.channel('public:orders')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
         fetchOrders();
     })
@@ -376,9 +376,9 @@ supabase.channel('public:orders')
 fetchOrders();
 
 // 刪除
-window.deleteUser = async function(username) {
+window.deleteUser = async function (username) {
     if (confirm(`確定要刪除 ${username} 的所有點單嗎？`)) {
-        const { error } = await supabase.from('orders').delete().eq('username', username);
+        const { error } = await supabaseClient.from('orders').delete().eq('username', username);
         if (error) console.error('Error deleting user orders:', error);
     }
 };
@@ -386,7 +386,7 @@ window.deleteUser = async function(username) {
 clearAllBtn.addEventListener('click', async () => {
     if (confirm('確定要清空所有人的點單嗎？')) {
         // Supabase 刪除全部需有條件，neq 空值可達到效果
-        const { error } = await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error } = await supabaseClient.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (error) console.error('Error clearing all orders:', error);
     }
 });
