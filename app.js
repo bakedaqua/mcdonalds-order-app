@@ -97,43 +97,8 @@ const cartBody = document.getElementById('cartBody');
 const totalPriceEl = document.getElementById('totalPrice');
 const clearAllBtn = document.getElementById('clearAllBtn');
 
-// Auth Elements
-const loginOverlay = document.getElementById('loginOverlay');
-const loginNameInput = document.getElementById('loginNameInput');
-const loginBtn = document.getElementById('loginBtn');
-const adminLoginBtn = document.getElementById('adminLoginBtn');
-const sidebarTitle = document.getElementById('sidebarTitle');
-
-let currentUser = localStorage.getItem('currentUser');
-let isAdmin = false;
-
-if (currentUser) {
-    loginOverlay.classList.remove('active');
-}
-
-loginBtn.addEventListener('click', () => {
-    const name = loginNameInput.value.trim();
-    if (!name) return alert('請填寫學號與姓名哦！');
-    if (!/^[bB]\d{7}/.test(name)) return alert('學號格式錯誤！請輸入 B 開頭加上 7 碼數字與姓名，例如：B1234567王小明');
-
-    currentUser = name;
-    localStorage.setItem('currentUser', name);
-    loginOverlay.classList.remove('active');
-    fetchOrders(); // 登入後重抓資料
-});
-
-adminLoginBtn.addEventListener('click', () => {
-    const pwd = prompt('請輸入管理員密碼：');
-    if (pwd === 'admin888') {
-        isAdmin = true;
-        sidebarTitle.textContent = '總訂單摘要';
-        adminLoginBtn.textContent = '管理員(已登入)';
-        adminLoginBtn.style.background = '#4CAF50';
-        fetchOrders(); // 登入後重抓所有人資料
-    } else {
-        alert('密碼錯誤！');
-    }
-});
+// Auth 相關元素與邏輯已移除，改為在 Modal 中輸入姓名
+let lastUsedName = localStorage.getItem('lastUsedName') || '';
 
 // Modal Elements
 const orderModal = document.getElementById('orderModal');
@@ -142,6 +107,7 @@ const modalItemName = document.getElementById('modalItemName');
 const modalItemPrice = document.getElementById('modalItemPrice');
 const dynamicOptionsArea = document.getElementById('dynamicOptionsArea');
 const confirmAddBtn = document.getElementById('confirmAddBtn');
+const orderUserNameInput = document.getElementById('orderUserName');
 
 let currentProduct = null;
 let currentCalculatedPrice = 0;
@@ -178,6 +144,9 @@ function openModal(product) {
     currentCalculatedPrice = product.price;
     modalItemName.textContent = product.name;
     modalItemPrice.textContent = `$${currentCalculatedPrice}`;
+
+    // 預填上次輸入的姓名
+    orderUserNameInput.value = lastUsedName;
 
     // 動態清空配置區
     dynamicOptionsArea.innerHTML = '';
@@ -259,9 +228,14 @@ closeModalBtn.addEventListener('click', () => {
     orderModal.classList.remove('active');
 });
 
-// 送出防呆並組織資料送後端
+// 送出並組織資料送後端
 confirmAddBtn.addEventListener('click', () => {
-    if (!currentUser) return alert('尚未登入，請重新載入網頁！');
+    const userName = orderUserNameInput.value.trim();
+    if (!userName) return alert('請輸入點餐人姓名！');
+    
+    // 儲存姓名方便下次使用
+    lastUsedName = userName;
+    localStorage.setItem('lastUsedName', userName);
 
     let finalDetails = '';
 
@@ -280,12 +254,15 @@ confirmAddBtn.addEventListener('click', () => {
     }
 
     supabaseClient.from('orders').insert([{
-        username: currentUser,
+        username: userName,
         item_name: currentProduct.name,
         item_price: currentCalculatedPrice,
         item_options: finalDetails
     }]).then(({ error }) => {
-        if (error) console.error('Error adding item:', error);
+        if (error) {
+            console.error('Error adding item:', error);
+            alert('點餐失敗，請檢查網路連線或稍後再試！');
+        }
     });
 
     orderModal.classList.remove('active');
@@ -339,8 +316,6 @@ function renderCart(cartData) {
 
 // Supabase 即時同步與 CRUD 邏輯
 async function fetchOrders() {
-    if (!currentUser && !isAdmin) return;
-
     const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: true });
     if (error) {
         console.error('Error fetching orders:', error);
@@ -350,9 +325,6 @@ async function fetchOrders() {
     const cartData = {};
     if (data) {
         data.forEach(row => {
-            // 如果不是管理員，只顯示自己的點單
-            if (!isAdmin && row.username !== currentUser) return;
-
             if (!cartData[row.username]) cartData[row.username] = [];
             cartData[row.username].push({
                 id: row.id,

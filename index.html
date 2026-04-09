@@ -10,26 +10,9 @@
 <body>
     <header class="header">
         <h1>麥當勞點餐系統</h1>
-        <button id="adminLoginBtn" class="admin-btn">管理員</button>
     </header>
 
-    <!-- 登入視窗 -->
-    <div id="loginOverlay" class="modal-overlay active">
-        <div class="modal">
-            <div class="modal-header">
-                <h2>歡迎使用點餐系統</h2>
-            </div>
-            <div class="modal-body">
-                <p>請輸入您的學號與姓名以開始點餐</p>
-                <div class="form-group">
-                    <input type="text" id="loginNameInput" placeholder="例如: B1234567王小明">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="add-to-cart-btn" id="loginBtn">登入</button>
-            </div>
-        </div>
-    </div>
+<!-- 登入視窗已移除 -->
 
     <div class="container">
         <!-- 分類導覽 -->
@@ -54,7 +37,7 @@
     <!-- 購物車側邊欄 -->
     <aside class="cart-sidebar" id="cartSidebar">
         <div class="cart-header">
-            <h2 id="sidebarTitle">我的訂單摘要</h2>
+            <h2 id="sidebarTitle">所有訂單摘要</h2>
             <button class="close-cart" id="closeCart">×</button>
         </div>
         <div class="cart-body" id="cartBody">
@@ -75,6 +58,11 @@
             </div>
             <div class="modal-body" id="modalBodyDynamic">
                 <p class="modal-price" id="modalItemPrice">$0</p>
+                
+                <div class="form-group" style="background:#fff9e6; padding:10px; border-radius:8px; border:1px solid #ffe8a1;">
+                    <label for="orderUserName">點餐人姓名 / 學號</label>
+                    <input type="text" id="orderUserName" placeholder="請輸入姓名">
+                </div>
 
                 <!-- 動態注入的套餐/客製化選擇區 -->
                 <div id="dynamicOptionsArea"></div>
