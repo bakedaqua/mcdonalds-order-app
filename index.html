@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>麥當勞點餐系統</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="header">
+        <div class="logo"><img src="logo.png" alt="McDonald's Logo" style="width: 100%; height: 100%; object-fit: contain;"></div>
         <h1>麥當勞點餐系統</h1>
     </header>
 
@@ -20,6 +21,7 @@
             <button class="category-btn active" data-category="meals">漢堡與沙拉</button>
             <button class="category-btn" data-category="fried">鷄塊與麥脆鷄腿</button>
             <button class="category-btn" data-category="drinks">McCafé與各式飲品</button>
+            <button class="category-btn" data-category="snacks">甜品與點心區</button>
         </nav>
 
         <!-- 餐點列表 -->
@@ -45,6 +47,7 @@
         </div>
         <div class="cart-footer">
             <h3 class="total-price">總計: $<span id="totalPrice">0</span></h3>
+            <button class="export-btn" id="exportOrdersBtn">匯出訂單 (TXT)</button>
             <button class="clear-all-btn" id="clearAllBtn">清空全部</button>
         </div>
     </aside>
@@ -60,8 +63,8 @@
                 <p class="modal-price" id="modalItemPrice">$0</p>
                 
                 <div class="form-group" style="background:#fff9e6; padding:10px; border-radius:8px; border:1px solid #ffe8a1;">
-                    <label for="orderUserName">點餐人姓名 / 學號</label>
-                    <input type="text" id="orderUserName" placeholder="請輸入姓名">
+                    <label for="orderUserName">點餐人學號 / 姓名</label>
+                    <input type="text" id="orderUserName" placeholder="例如：B1234567王小明">
                 </div>
 
                 <!-- 動態注入的套餐/客製化選擇區 -->

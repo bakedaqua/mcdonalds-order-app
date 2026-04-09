@@ -59,6 +59,23 @@ const productsData = {
         { id: 'd23', name: '紅茶(熱)', price: 38, emoji: '☕' },
         { id: 'd24', name: '台灣鮮榨柳丁汁', price: 69, emoji: '🍊' },
         { id: 'd25', name: '鮮乳', price: 33, emoji: '🥛' }
+    ],
+    snacks: [
+        { id: 's1', name: '蘋果派', price: 41, emoji: '🥧' },
+        { id: 's2', name: '麥克鷄塊 (10塊)', price: 110, emoji: '🍗' },
+        { id: 's3', name: '麥克鷄塊 (6塊)', price: 69, emoji: '🍗' },
+        { id: 's4', name: '麥克鷄塊 (4塊)', price: 49, emoji: '🍗' },
+        { id: 's5', name: '勁辣香鷄翅(6塊)', price: 131, emoji: '🍗' },
+        { id: 's6', name: '勁辣香鷄翅(2塊)', price: 50, emoji: '🍗' },
+        { id: 's7', name: '原味麥脆鷄腿2塊 (棒腿或大腿部位恕不指定、更換)', price: 129, emoji: '🍗' },
+        { id: 's8', name: '原味麥脆鷄腿 (棒腿或大腿部位恕不指定、更換)', price: 69, emoji: '🍗' },
+        { id: 's9', name: '辣味麥脆鷄腿2塊 (棒腿或大腿部位恕不指定、更換)', price: 129, emoji: '🍗' },
+        { id: 's10', name: '辣味麥脆鷄腿 (棒腿或大腿部位恕不指定、更換)', price: 69, emoji: '🍗' },
+        { id: 's11', name: '漢堡', price: 36, emoji: '🍔' },
+        { id: 's12', name: '薯條(小)', price: 40, emoji: '🍟' },
+        { id: 's13', name: '薯條(中)', price: 50, emoji: '🍟' },
+        { id: 's14', name: '薯條(大)', price: 66, emoji: '🍟' },
+        { id: 's15', name: '四季沙拉', price: 56, emoji: '🥗' }
     ]
 };
 
@@ -111,14 +128,17 @@ const orderUserNameInput = document.getElementById('orderUserName');
 
 let currentProduct = null;
 let currentCalculatedPrice = 0;
+let currentCartData = {}; // 全域存放目前購物車資料，方便匯出
 
 // 初始化渲染
 function renderProducts(category = 'meals') {
     productGrid.innerHTML = '';
     const filtered = allProducts.filter(p => p.category === category);
-    filtered.forEach(p => {
+    filtered.forEach((p, index) => {
         const card = document.createElement('div');
         card.className = 'product-card';
+        // 添加交錯動畫延遲
+        card.style.animationDelay = `${index * 0.05}s`;
         card.innerHTML = `
             <div class="product-name">${p.name}</div>
             <div class="product-price">$${p.price}</div>
@@ -334,8 +354,52 @@ async function fetchOrders() {
             });
         });
     }
+    currentCartData = cartData;
     renderCart(cartData);
 }
+
+// 匯出訂單功能
+function exportOrders() {
+    if (Object.keys(currentCartData).length === 0) {
+        return alert('目前沒有任何訂單可以匯出！');
+    }
+
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toLocaleTimeString('zh-TW', { hour12: false });
+
+    let content = `=== 麥當勞點餐系統 訂單摘要 ===\n`;
+    content += `匯出時間: ${dateStr} ${timeStr}\n`;
+    content += `--------------------------------\n\n`;
+
+    let grandTotal = 0;
+
+    Object.keys(currentCartData).forEach(username => {
+        content += `【點餐人: ${username}】\n`;
+        let userTotal = 0;
+        currentCartData[username].forEach(item => {
+            content += `- ${item.name} (${item.options}) $${item.price}\n`;
+            userTotal += item.price;
+        });
+        content += `>> 個人小計: $${userTotal}\n\n`;
+        grandTotal += userTotal;
+    });
+
+    content += `--------------------------------\n`;
+    content += `總計金額: $${grandTotal}\n`;
+    content += `=== 摘要結束 ===`;
+
+    // 建立 Blob 並下載
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `麥當勞訂單_${dateStr.replace(/-/g, '')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportOrdersBtn').addEventListener('click', exportOrders);
 
 // 監聽即時變更
 supabaseClient.channel('public:orders')
