@@ -373,6 +373,7 @@ function exportOrders() {
     content += `--------------------------------\n\n`;
 
     let grandTotal = 0;
+    const itemStats = {};
 
     Object.keys(currentCartData).forEach(username => {
         content += `【點餐人: ${username}】\n`;
@@ -380,10 +381,20 @@ function exportOrders() {
         currentCartData[username].forEach(item => {
             content += `- ${item.name} (${item.options}) $${item.price}\n`;
             userTotal += item.price;
+
+            // 統計餐點數量
+            const key = `${item.name} (${item.options})`;
+            itemStats[key] = (itemStats[key] || 0) + 1;
         });
         content += `>> 個人小計: $${userTotal}\n\n`;
         grandTotal += userTotal;
     });
+
+    content += `=== 餐點統計 ===\n`;
+    Object.keys(itemStats).sort().forEach(key => {
+        content += `${key}: ${itemStats[key]}\n`;
+    });
+    content += `\n`;
 
     content += `--------------------------------\n`;
     content += `總計金額: $${grandTotal}\n`;
