@@ -348,6 +348,53 @@ h1 {
 .cart-item-info strong { font-weight: 600; display: block; margin-bottom: 2px;}
 .cart-item-note { font-size: 13px; color: #777; font-style: italic;}
 
+.cart-item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.cart-item-price {
+    font-weight: 800;
+    color: var(--mc-black);
+}
+
+.cart-item-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-btn, .delete-item-btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.edit-btn {
+    background: #eef4ff;
+    color: #3b82f6;
+}
+
+.edit-btn:hover {
+    background: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.delete-item-btn {
+    background: #fff1f2;
+    color: #f43f5e;
+}
+
+.delete-item-btn:hover {
+    background: #ffe4e6;
+    border-color: #f43f5e;
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed; 

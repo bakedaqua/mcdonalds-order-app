@@ -129,6 +129,8 @@ const orderUserNameInput = document.getElementById('orderUserName');
 let currentProduct = null;
 let currentCalculatedPrice = 0;
 let currentCartData = {}; // 全域存放目前購物車資料，方便匯出
+let isEditing = false;
+let editingItemId = null;
 
 // 初始化渲染
 function renderProducts(category = 'meals') {
@@ -159,43 +161,60 @@ categoryBtns.forEach(btn => {
 });
 
 // 打開點餐 Modal
-function openModal(product) {
+function openModal(product, existingItem = null) {
+    isEditing = !!existingItem;
+    editingItemId = existingItem ? existingItem.id : null;
+    
     currentProduct = product;
-    currentCalculatedPrice = product.price;
+    currentCalculatedPrice = existingItem ? existingItem.price : product.price;
     modalItemName.textContent = product.name;
     modalItemPrice.textContent = `$${currentCalculatedPrice}`;
 
-    // 預填上次輸入的姓名
-    orderUserNameInput.value = lastUsedName;
+    // 預填上次輸入的姓名 (若是編輯則填入該訂單原本的姓名)
+    orderUserNameInput.value = existingItem ? existingItem.username : lastUsedName;
+    
+    confirmAddBtn.textContent = isEditing ? '儲存修改' : '加入購物車';
 
     // 動態清空配置區
     dynamicOptionsArea.innerHTML = '';
 
     if (product.category === 'meals' || product.category === 'fried') {
         // 主餐 -> 顯示 A-E 配餐邏輯
+        let selectedCombo = 'none';
+        let selectedDrink = defaultDrinks[0].name;
+
+        if (isEditing && existingItem.options.startsWith('搭配 ')) {
+            // 解析 "搭配 A 經典配餐 (中薯+中杯飲料) - 可口可樂"
+            const parts = existingItem.options.replace('搭配 ', '').split(' - ');
+            const comboName = parts[0];
+            const drinkName = parts[1];
+            const foundCombo = combos.find(c => c.name === comboName);
+            if (foundCombo) selectedCombo = foundCombo.id;
+            selectedDrink = drinkName;
+        }
+
         dynamicOptionsArea.innerHTML = `
             <div class="combo-box">
                 <h4>選擇配餐</h4>
                 <div class="radio-group" id="comboRadios">
                     ${combos.map((c, i) => `
                         <label>
-                            <input type="radio" name="comboSet" value="${c.id}" ${i === 0 ? 'checked' : ''}>
+                            <input type="radio" name="comboSet" value="${c.id}" ${c.id === selectedCombo ? 'checked' : ''}>
                             ${c.name} ${c.price > 0 ? `(+$${c.price})` : ''}
                         </label>
                     `).join('')}
                 </div>
                 
-                <div id="comboAddonArea" class="hidden">
+                <div id="comboAddonArea" class="${combos.find(c => c.id === selectedCombo).showDrinks ? '' : 'hidden'}">
                     <h4>配餐飲料</h4>
                     <div class="radio-group" id="drinkSelectionGroup">
                         ${defaultDrinks.map((d, i) => `
                             <label>
-                                <input type="radio" name="drinkSelection" value="${d.name}" data-price="${d.price}" ${i === 0 ? 'checked' : ''}>
+                                <input type="radio" name="drinkSelection" value="${d.name}" data-price="${d.price}" ${d.name === selectedDrink ? 'checked' : ''}>
                                 ${d.name} ${d.price > 0 ? `(+$${d.price})` : ''}
                             </label>
                         `).join('')}
                     </div>
-                    
                 </div>
             </div>
         `;
@@ -228,14 +247,19 @@ function openModal(product) {
 
     } else {
         // 單點點心或飲料 -> 預設客製化
+        let selectedCustom = '';
+        if (isEditing && existingItem.options.startsWith('[') && existingItem.options.endsWith(']')) {
+            selectedCustom = existingItem.options.slice(1, -1);
+        }
+
         dynamicOptionsArea.innerHTML = `
             <div class="combo-box">
                 <h4>客製化</h4>
                 <select class="drink-select" id="customization">
-                    <option value="">正常</option>
-                    <option value="去冰">去冰</option>
-                    <option value="少冰">少冰</option>
-                    <option value="不加醬">不加醬</option>
+                    <option value="" ${selectedCustom === '' ? 'selected' : ''}>正常</option>
+                    <option value="去冰" ${selectedCustom === '去冰' ? 'selected' : ''}>去冰</option>
+                    <option value="少冰" ${selectedCustom === '少冰' ? 'selected' : ''}>少冰</option>
+                    <option value="不加醬" ${selectedCustom === '不加醬' ? 'selected' : ''}>不加醬</option>
                 </select>
             </div>
         `;
@@ -273,15 +297,24 @@ confirmAddBtn.addEventListener('click', () => {
         if (custom) finalDetails = `[${custom}]`;
     }
 
-    supabaseClient.from('orders').insert([{
+    const orderData = {
         username: userName,
         item_name: currentProduct.name,
         item_price: currentCalculatedPrice,
         item_options: finalDetails
-    }]).then(({ error }) => {
+    };
+
+    let promise;
+    if (isEditing) {
+        promise = supabaseClient.from('orders').update(orderData).eq('id', editingItemId);
+    } else {
+        promise = supabaseClient.from('orders').insert([orderData]);
+    }
+
+    promise.then(({ error }) => {
         if (error) {
-            console.error('Error adding item:', error);
-            alert('點餐失敗，請檢查網路連線或稍後再試！');
+            console.error('Error processing order:', error);
+            alert('操作失敗，請檢查權限或網路連線！');
         }
     });
 
@@ -313,7 +346,13 @@ function renderCart(cartData) {
                             <strong>${item.name}</strong> 
                             <span class="cart-item-note">${item.options}</span>
                         </div>
-                        <div style="font-weight:bold;">$${item.price}</div>
+                        <div class="cart-item-actions">
+                            <div class="cart-item-price">$${item.price}</div>
+                            <div class="cart-item-btns">
+                                <button class="edit-btn" onclick="editItem('${item.id}', '${username}')">編輯</button>
+                                <button class="delete-item-btn" onclick="deleteItem('${item.id}')">刪除</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -422,12 +461,40 @@ supabaseClient.channel('public:orders')
 // 初始呼叫
 fetchOrders();
 
-// 刪除
+// 刪除使用者
 window.deleteUser = async function (username) {
     if (confirm(`確定要刪除 ${username} 的所有點單嗎？`)) {
         const { error } = await supabaseClient.from('orders').delete().eq('username', username);
         if (error) console.error('Error deleting user orders:', error);
     }
+};
+
+// 刪除單項餐點
+window.deleteItem = async function (itemId) {
+    if (confirm('確定要刪除這項餐點嗎？')) {
+        const { error } = await supabaseClient.from('orders').delete().eq('id', itemId);
+        if (error) console.error('Error deleting item:', error);
+    }
+};
+
+// 編輯單項餐點
+window.editItem = function (itemId, username) {
+    // 從 currentCartData 找出該項目
+    const item = currentCartData[username].find(i => i.id === itemId);
+    if (!item) return;
+
+    // 找出對應的產品基本資料
+    const product = allProducts.find(p => p.name === item.name);
+    if (!product) {
+        alert('找不到產品資料，無法編輯。');
+        return;
+    }
+
+    // 打開 Modal 並帶入現有資料
+    openModal(product, { ...item, username });
+    
+    // 如果側邊欄開著，可以關掉或保持
+    // cartSidebar.classList.remove('open');
 };
 
 clearAllBtn.addEventListener('click', async () => {
