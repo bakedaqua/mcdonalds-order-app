@@ -321,6 +321,21 @@ confirmAddBtn.addEventListener('click', () => {
     orderModal.classList.remove('active');
 });
 
+// HTML 跳脫函數，防範 XSS 攻擊
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, function(match) {
+        const escape = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        };
+        return escape[match];
+    });
+}
+
 // 渲染購物車
 function renderCart(cartData) {
     let totalItems = 0;
@@ -343,14 +358,14 @@ function renderCart(cartData) {
                 itemsHtml += `
                     <div class="cart-item">
                         <div class="cart-item-info">
-                            <strong>${item.name}</strong> 
-                            <span class="cart-item-note">${item.options}</span>
+                            <strong>${escapeHTML(item.name)}</strong> 
+                            <span class="cart-item-note">${escapeHTML(item.options)}</span>
                         </div>
                         <div class="cart-item-actions">
                             <div class="cart-item-price">$${item.price}</div>
                             <div class="cart-item-btns">
-                                <button class="edit-btn" onclick="editItem('${item.id}', '${username}')">編輯</button>
-                                <button class="delete-item-btn" onclick="deleteItem('${item.id}')">刪除</button>
+                                <button class="edit-btn" data-id="${item.id}" data-username="${escapeHTML(username)}">編輯</button>
+                                <button class="delete-item-btn" data-id="${item.id}">刪除</button>
                             </div>
                         </div>
                     </div>
@@ -359,13 +374,24 @@ function renderCart(cartData) {
 
             groupDiv.innerHTML = `
                 <h4>
-                    ${username} <span style="font-size:14px;color:#333">小計: $${userTotal}</span>
-                    <button class="delete-user-btn" onclick="deleteUser('${username}')">刪除</button>
+                    ${escapeHTML(username)} <span style="font-size:14px;color:#333">小計: $${userTotal}</span>
+                    <button class="delete-user-btn" data-username="${escapeHTML(username)}">刪除</button>
                 </h4>
                 ${itemsHtml}
             `;
             cartBody.appendChild(groupDiv);
             globalTotal += userTotal;
+        });
+
+        // 綁定事件監聽器，取代 inline onclick (防範 XSS)
+        cartBody.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => editItem(e.currentTarget.dataset.id, e.currentTarget.dataset.username));
+        });
+        cartBody.querySelectorAll('.delete-item-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => deleteItem(e.currentTarget.dataset.id));
+        });
+        cartBody.querySelectorAll('.delete-user-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => deleteUser(e.currentTarget.dataset.username));
         });
     }
 
